@@ -101,7 +101,7 @@ namespace surveillance_system
                 int[,] pedPos = new int[52,52];
                 for(int i = 0; i < n_ped; i++)
                 {
-                    Random rand = new Random();
+                    //Random rand = new Random(randSeed); // modified by 0boo 23-01-27
                     // int intersectidx = rand.Next(9);
                     int intersectidx = rand.Next(36);
 
@@ -207,7 +207,7 @@ namespace surveillance_system
                 }
 
                 int i, j;
-                Random rand = new Random();
+                //Random rand = new Random(randSeed); // modified by 0boo 23-01-27
 
                 do
                 {
@@ -257,7 +257,7 @@ namespace surveillance_system
                 int[,] pedPos = new int[52,52];
                 for(int i = 0; i < n_car; i++)
                 {
-                    Random rand = new Random();
+                    //Random rand = new Random(randSeed); // modified by 0boo 23-01-27
                     int intersectidx = rand.Next(36);
                     peds[i].X = DST[intersectidx, 0];
                     peds[i].Y = DST[intersectidx, 1];
@@ -294,7 +294,7 @@ namespace surveillance_system
                 double midX = DST[currAreaIdx, 0];
                 double midY = DST[currAreaIdx, 1];
 
-                Random rand = new Random();
+                //Random rand = new Random(randSeed); // modified by 0boo 23-01-27
                 do
                 {
                     i = currAreaIdx / lane_num;

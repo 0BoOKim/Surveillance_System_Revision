@@ -5,16 +5,19 @@ using System.Linq;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.IO;
 
 namespace surveillance_system
 {
     public partial class Program
     {
+        static int randSeed = 1731;
+        public static Random rand = new Random(randSeed); // modified by 0boo 23-01-27
         public static CCTV[] cctvs;
         public static Pedestrian[] peds;
 
         // Configuration: simulation time
-        const double aUnitTime = 100 * 0.001; // (sec)
+        const double aUnitTime = 100 * 0.001; // (sec) default value: 100 ms
         public static Road road = new Road();
 
         /* --------------------------------------
@@ -260,7 +263,8 @@ namespace surveillance_system
             const int N_CCTV = 100;
             const int N_Ped = 10;
 
-            Random rand = new Random();
+            //Random rand = new Random(randSeed); // modified by 0boo 23-01-27
+
             const double Lens_FocalLength = 2.8; // mm, [2.8 3.6 6 8 12 16 25]
             const double WD = 3.6; // (mm) width, horizontal size of camera sensor
             const double HE = 2.7; // (mm) height, vertical size of camera sensor
@@ -306,9 +310,9 @@ namespace surveillance_system
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            // Step 1-2) calculate vertical/horizontal AOV
-            double H_AOV = RadToDeg(2 * Math.Atan(WD / (2 * Lens_FocalLength))); // Horizontal AOV
-            double V_AOV = RadToDeg(2 * Math.Atan(HE / (2 * Lens_FocalLength))); // Vertical AOV
+            // Step 1-2) calculate vertical/horizontal AOV , (23-02-02) modifed by 0Boo, deg -> rad
+            double H_AOV = 2 * Math.Atan(WD / (2 * Lens_FocalLength));//RadToDeg(2 * Math.Atan(WD / (2 * Lens_FocalLength))); // Horizontal AOV
+            double V_AOV = 2 * Math.Atan(HE / (2 * Lens_FocalLength));//RadToDeg(2 * Math.Atan(HE / (2 * Lens_FocalLength))); // Vertical AOV
 
             // double D_AOV = RadToDeg(2 * Math.Atan(Diag / (2 * Lens_FocalLength)));
             // (mm) distance
@@ -447,12 +451,12 @@ namespace surveillance_system
                     // cctvs[i].ViewAngleH = rand.NextDouble() * 360;
                     // cctvs[i].ViewAngleV = -35 - 20 * rand.NextDouble();
 
-                    cctvs[i].setViewAngleH(rand.NextDouble() * 360);
+                    cctvs[i].setViewAngleH(rand.NextDouble() * 360*Math.PI/180);  // (23-02-02) modified by 0BoO, deg -> rad
                     // cctvs[i].setViewAngleH(rand.Next(4) * 90);
                     // cctvs[i].setViewAngleV(-35 - 20 * rand.NextDouble());
-                    cctvs[i].setViewAngleV(-45.0);
-                    
-                    
+                    cctvs[i].setViewAngleV(-45.0 * Math.PI / 180);   // (23-02-02) modified by 0BoO, deg -> rad
+
+
                     cctvs[i].setFixMode(true); // default (rotate)
 
                     cctvs[i].H_AOV = 2 * Math.Atan(WD / (2 * Lens_FocalLength));
@@ -481,6 +485,9 @@ namespace surveillance_system
                     cctvs[i].get_H_FOV(Dist, cctvs[i].WD, cctvs[i].Focal_Length, cctvs[i].ViewAngleH, cctvs[i].X, cctvs[i].Y);
                     cctvs[i].get_V_FOV(Dist, cctvs[i].HE, cctvs[i].Focal_Length, cctvs[i].ViewAngleV, cctvs[i].X, cctvs[i].Z);
                     // cctvs[i].printCCTVInfo();
+
+                    cctvs[i].calcBlindToPed();          // (23-02-01) added by 0BoO
+                    cctvs[i].calcEffDistToPed(3000);     // (23-02-01) added by 0BoO, input value is 3000mm(3meter)
                 }
             }
             /* -------------------------------------------
@@ -618,7 +625,22 @@ namespace surveillance_system
             Console.WriteLine(" [Avg] Direction Error (sec): {0:F2}", directionError.Average()*aUnitTime);
             Console.WriteLine(" [Avg] Success Time (sec): {0:F2}", R_Surv_Time.Average() * aUnitTime);
 
+            var result_FilePath1 = @"Result1.out";
+            var result_FilePath2 = @"Result2.out";
+            var wt_result1 = new StreamWriter(result_FilePath1);
+            var wt_result2 = new StreamWriter(result_FilePath2);
 
+          
+            wt_result1.WriteLine("{0:F2} {1:F2} {2:F2}", R_Surv_Time.Average() * aUnitTime, outOfRange.Average() * aUnitTime, directionError.Average() * aUnitTime);      
+            wt_result1.Close();
+            
+            for (int i = 0; i < N_Ped; i++)
+            {
+                wt_result2.WriteLine("{0:F2} {1:F2} {2:F2}", R_Surv_Time[i] * aUnitTime, outOfRange[i] * aUnitTime, directionError[i] * aUnitTime);
+            }
+
+            
+            wt_result2.Close();
             // 결과(시간)
             // Console.WriteLine("Execution time : {0}", stopwatch.ElapsedMilliseconds + "ms");
             // accTime += stopwatch.ElapsedMilliseconds;

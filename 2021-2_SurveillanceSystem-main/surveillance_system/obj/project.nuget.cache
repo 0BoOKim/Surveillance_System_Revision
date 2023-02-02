@@ -1,13 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "S+Zh5oKMuv+mbCHsQYXPyguCrbQ4IREmQn/J+gkOOGZpvEVEvcY1OsUUHKJdF4FmtDktcxUHdt/DGgtpvjVRhg==",
+  "dgSpecHash": "ZDtTkNDoConz9Ucc4jUV+4A00nQB9r/MD+uN/yv3qj4xJnWxNEDLlSP1/yrXzOqIDEFQAmWuhEI4zlXe5kyKeA==",
   "success": true,
-  "projectFilePath": "D:\\Google 드라이브\\Temporary Working\\연구관련\\CCTV 운용 시뮬레이션\\Surveillance System (C#)\\2021-2_SurveillanceSystem-main\\surveillance_system\\surveillance_system.csproj",
+  "projectFilePath": "C:\\Users\\0bookim\\내 드라이브\\Temporary Working\\연구관련\\CCTV 운용 시뮬레이션\\Surveillance System (C#)\\2021-2_SurveillanceSystem-main\\surveillance_system\\surveillance_system.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\0book\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\3.1.0\\microsoft.windowsdesktop.app.ref.3.1.0.nupkg.sha512",
-    "C:\\Users\\0book\\.nuget\\packages\\microsoft.netcore.app.ref\\3.1.0\\microsoft.netcore.app.ref.3.1.0.nupkg.sha512",
-    "C:\\Users\\0book\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\3.1.10\\microsoft.aspnetcore.app.ref.3.1.10.nupkg.sha512",
-    "C:\\Users\\0book\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\3.1.32\\microsoft.netcore.app.host.win-x64.3.1.32.nupkg.sha512"
+    "C:\\Users\\0bookim\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\3.1.0\\microsoft.windowsdesktop.app.ref.3.1.0.nupkg.sha512",
+    "C:\\Users\\0bookim\\.nuget\\packages\\microsoft.netcore.app.ref\\3.1.0\\microsoft.netcore.app.ref.3.1.0.nupkg.sha512",
+    "C:\\Users\\0bookim\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\3.1.10\\microsoft.aspnetcore.app.ref.3.1.10.nupkg.sha512",
+    "C:\\Users\\0bookim\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\3.1.32\\microsoft.netcore.app.host.win-x64.3.1.32.nupkg.sha512"
   ],
   "logs": []
 }

@@ -192,7 +192,7 @@ namespace surveillance_system
 
             public double ViewAngleH;
 
-            public double ViewAngleV = -35;
+            public double ViewAngleV = -35*Math.PI/180; // modified by 0BoO, deg -> rad
 
             public double Eff_Dist_From;
             public double Eff_Dist_To;
@@ -204,7 +204,7 @@ namespace surveillance_system
 
             // 최대거리
             public double Max_Dist;
-
+            
             // todo
             // ground sample distance
 
@@ -232,18 +232,18 @@ namespace surveillance_system
             public void setViewAngleH(double angleH)
             {
                 // 양수 or 음수 예외처리x 에러 아니고 회전 방향 차이
-                ViewAngleH = angleH;
+                ViewAngleH = angleH; //angleH * Math.PI / 180; // modified by 0BoO, deg -> rad
             }
             public void setViewAngleV(double angleV)
             {
               // angleV default value is -35
-              if(angleV > -35 || angleV < -55)
+              if(angleV > -35*Math.PI/180 || angleV < -55 * Math.PI / 180)
               {
                 // debug
-                Console.WriteLine("[Warning] Horizontal ViewAngle should be between -35 ~ -55");
+                Console.WriteLine("[Warning] Vertical ViewAngle should be between -35 ~ -55");
                 return;
               }
-              ViewAngleV = angleV;
+                ViewAngleV = angleV;//angleV * Math.PI / 180; // modified by 0BoO, deg -> rad
             }
             public void rotateHorizon(double rotationDegree)
             {
@@ -259,26 +259,29 @@ namespace surveillance_system
               return Math.Sqrt(Math.Pow(Math.Abs(X - ped.X),2) 
                               + Math.Pow(Math.Abs(Y - ped.Y),2));
             }
-            public double calcEffDistToPed(Pedestrian ped)
+            public void calcEffDistToPed(double height)  // 22-02-01, modified by 0BoO
             {
-              // matlab code
-              // CCTV.R_eff(i) = (CCTV.Z(i)-Ped_Height*1.0)/tand(abs(CCTV.ViewAngleV(i))-(CCTV.V_AOV(i)/2));
-              double distance = (Z-ped.H*1.0) / Math.Tan(Math.Abs(ViewAngleV) - (V_AOV/2));
-              return distance;
+                // matlab code
+                // CCTV.R_eff(i) = (CCTV.Z(i)-Ped_Height*1.0)/tand(abs(CCTV.ViewAngleV(i))-(CCTV.V_AOV(i)/2));
+                // double distance = (Z-ped.H*1.0) / Math.Tan(Math.Abs(ViewAngleV) - (V_AOV/2));
+                double distance = (Z - height * 1.0) * Math.Tan( Math.PI/2 - Math.Abs(ViewAngleV) + V_AOV / 2 ); // modified by 0boO
+                //return distance;
+                Eff_Dist_To = distance;
             }
-            public double calcBlindToPed(Pedestrian ped)
+            public void calcBlindToPed() // 22-02-01, modified by 0BoO
             {
               // matlab code
               // CCTV.R_blind(i) = CCTV.Z(i)/tand(CCTV.V_AOV(i)/2 + abs(CCTV.ViewAngleV(i)))
-              double distance = Z / Math.Tan((V_AOV/2) + Math.Abs(ViewAngleV));
-              return distance;
+              double distance = Z * Math.Tan( Math.PI/2 - V_AOV/2 - Math.Abs(ViewAngleV)); // modified by 0boO
+                //return distance;
+                Eff_Dist_From = distance;
             }
-            public bool isPedInEffDist(Pedestrian ped)
-            {
-              return (calcDistToPed(ped) < Max_Dist) // 기기 성능에 따른 최대 감시거리 
-                  && (calcDistToPed(ped) >= calcBlindToPed(ped)) // blind ~ 유효거리
-                  && (calcDistToPed(ped) <= calcEffDistToPed(ped));
-            }
+            //public bool isPedInEffDist(Pedestrian ped)
+            //{
+            //  return (calcDistToPed(ped) < Max_Dist) // 기기 성능에 따른 최대 감시거리 
+            //      && (calcDistToPed(ped) >= calcBlindToPed(ped)) // blind ~ 유효거리
+            //      && (calcDistToPed(ped) <= calcEffDistToPed(ped));
+            //}
             public void get_H_FOV(
                 double[] Dist,
                 double WD,
