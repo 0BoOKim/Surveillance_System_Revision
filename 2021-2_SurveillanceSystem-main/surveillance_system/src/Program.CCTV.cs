@@ -316,8 +316,8 @@ namespace surveillance_system
                     // line 9, 10
                     // H_FOV_1[i] = (1 / 2) * Dist[i] * HE / Focal_Length;
                     // H_FOV_2[i] = (-1 / 2) * Dist[i] * HE / Focal_Length;
-                    H_FOV_1[i] = (1 / 2) * Dist[i] * WD / Focal_Length;
-                    H_FOV_2[i] = (-1 / 2) * Dist[i] * WD / Focal_Length;
+                    H_FOV_1[i] = 0.5 * Dist[i] * WD / Focal_Length;
+                    H_FOV_2[i] = -0.5 * Dist[i] * WD / Focal_Length;
 
                     H_X0[i] =
                         Dist[i] * Math.Cos(ViewAngle) -
@@ -396,7 +396,7 @@ namespace surveillance_system
                     // 기존 코드 두줄
                     // double Dist_WD_FL = Dist[i] * WD / Focal_Length;
                     // double Dist_Cos_ViewAngle = Dist[i] * Math.Cos(ViewAngle);
-                    double Dist_HE_FL = (1/2) * Dist[i] * HE / Focal_Length;
+                    double Dist_HE_FL = 0.5 * Dist[i] * HE / Focal_Length;
                     double Dist_Cos_ViewAngle = Dist[i] * Math.Cos(ViewAngle);
                     double Dist_Sin_ViewAngle = Dist[i] * Math.Sin(ViewAngle);
 

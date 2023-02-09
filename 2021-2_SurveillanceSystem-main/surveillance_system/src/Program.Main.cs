@@ -7,6 +7,9 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.IO;
 
+// added by 0BoO
+using System.Text;
+
 namespace surveillance_system
 {
     public partial class Program
@@ -20,6 +23,8 @@ namespace surveillance_system
         const double aUnitTime = 100 * 0.001; // (sec) default value: 100 ms
         public static Road road = new Road();
 
+        const bool On_Visualization = true;
+
         /* --------------------------------------
          * 추적 여부 검사 함수
         -------------------------------------- */
@@ -28,9 +33,13 @@ namespace surveillance_system
 
             int[] returnArr = new int[N_Ped]; // 반환할 탐지 결과 (1: 탐지  0: 거리상 미탐지  -1: 방향 미스)
 
-            // 거리 검사
+            // 거리 검사(최소 ppm 기준)
             int[,] candidate_detected_ped_h = new int[N_CCTV, N_Ped];
             int[,] candidate_detected_ped_v = new int[N_CCTV, N_Ped];
+
+            // 거리 검사(Effective distance set 기준)
+            int[,] candidate_detected_ped1 = new int[N_CCTV, N_Ped]; // shorter than Max Distance(Eff_dist_To)?
+            int[,] candidate_detected_ped2 = new int[N_CCTV, N_Ped]; // longer than Blinded Distance(Eff_dist_From)? 
 
             for (int i = 0; i < N_CCTV; i++)
             {
@@ -50,6 +59,7 @@ namespace surveillance_system
                             .Sqrt(Math.Pow(cctvs[i].X - peds[j].Pos_V2[0], 2) +
                             Math.Pow(cctvs[i].Z - peds[j].Pos_V2[1], 2)) ;
 
+                    // (23-02-07) Now, ignore bleow two foreach statements
                     foreach (double survdist_h in cctvs[i].SurvDist_H)
                     {
                         if (dist_h1 <= survdist_h*100*10 && dist_h2 <= survdist_h * 100 * 10)
@@ -65,13 +75,22 @@ namespace surveillance_system
                         }
                     }
 
+                    if ( dist_h1 <= cctvs[i].Eff_Dist_To && dist_h2 <= cctvs[i].Eff_Dist_To)
+                    {
+                        candidate_detected_ped1[i,j] = 1;
+                    }
+
+                    if (dist_h1 >= cctvs[i].Eff_Dist_From && dist_h2 >= cctvs[i].Eff_Dist_From)
+                    {
+                        candidate_detected_ped2[i, j] = 1;
+                    }
                     // if (cctvs[i].isPedInEffDist(peds[j])) {
                     //   candidate_detected_ped_h[i, j] = 1;
                     //   candidate_detected_ped_v[i, j] = 1;
                     // }
 
-                      // candidate_detected_ped_h[i, j] = 1;
-                      // candidate_detected_ped_v[i, j] = 1;
+                    // candidate_detected_ped_h[i, j] = 1;
+                    // candidate_detected_ped_v[i, j] = 1;
                 }
             }
 
@@ -97,17 +116,22 @@ namespace surveillance_system
                 for (int j = 0; j < N_Ped; j++)
                 {
 
-                    // 거리상 미탐지면 넘어감 
-                    if (candidate_detected_ped_h[i, j] != 1 || candidate_detected_ped_v[i, j] != 1)
-                    {                      
+                    // 거리상 미탐지면 넘어감 --> (23-02-07) blocked
+                    //if (candidate_detected_ped_h[i, j] != 1 || candidate_detected_ped_v[i, j] != 1)
+                    //{                      
+                    //    continue;
+                    //}
+
+                    if (candidate_detected_ped1[i, j] != 1 || candidate_detected_ped2[i, j] != 1)
+                    {
                         continue;
                     }
-                    
+
                     int h_detected = -1;
                     int v_detected = -1;
 
-                    // 거리가 범위 내이면
-                    if (candidate_detected_ped_h[i, j] == 1)
+                    // 거리가 범위 내이면 --> (23-02-07) cctv와 개체 간의 거리가 유효 거리 범위이면 
+                    if (candidate_detected_ped1[i, j] == 1 || candidate_detected_ped2[i, j] == 1)//if (candidate_detected_ped_h[i, j] == 1)
                     {
                         // len equals Dist
                         int len = cctvs[i].H_FOV.X0.GetLength(0);
@@ -131,8 +155,8 @@ namespace surveillance_system
                         }
                     }
 
-                    // vertical  각도 검사 
-                    if (candidate_detected_ped_v[i, j] == 1)
+                    // vertical  각도 검사 --> (23-02-07) 비효율적이지만, 검증 및 디버깅을 위해 남겨둠
+                    if (candidate_detected_ped1[i, j] == 1 || candidate_detected_ped2[i, j] == 1) //if (candidate_detected_ped_v[i, j] == 1)
                     {
                       // Surv_SYS_v210202.m [line 260]
                       /*         
@@ -260,7 +284,7 @@ namespace surveillance_system
             -------------------------------------------------------------------------*/
             // Configuration: surveillance cameras
             // constant
-            const int N_CCTV = 100;
+            const int N_CCTV = 9;
             const int N_Ped = 10;
 
             //Random rand = new Random(randSeed); // modified by 0boo 23-01-27
@@ -287,9 +311,15 @@ namespace surveillance_system
             int Road_N_Interval = 0;
             if (On_Road_Builder)
             {
-                Road_Width = 10000; // mm
+                // set 1
+                //Road_Width = 2000;// 10000; // mm
+                //Road_Interval = 10000;//88000; // mm, 10 meter
+                //Road_N_Interval = 3;//5;
+
+                // set 2
+                Road_Width = 1000; // mm
                 Road_Interval = 88000; // mm, 10 meter
-                Road_N_Interval =5;
+                Road_N_Interval = 5;
             }
 
             bool Opt_Observation = false;
@@ -441,7 +471,7 @@ namespace surveillance_system
 
                     // cctvs[i].Z =
                     //     (int)Math.Ceiling(rand.NextDouble() * (Height.Max() - 3000)) + 3000; // milimeter
-                    cctvs[i].setZ((int)Math.Ceiling(rand.NextDouble() * (Height.Max() - 3000)) + 3000);
+                    cctvs[i].setZ((int)Math.Ceiling(rand.NextDouble() * (Height.Max() - 3000)) + 6000);
                     cctvs[i].WD = WD;
                     cctvs[i].HE = HE;
                     cctvs[i].imW = (int)imW;
@@ -462,10 +492,19 @@ namespace surveillance_system
                     cctvs[i].H_AOV = 2 * Math.Atan(WD / (2 * Lens_FocalLength));
                     cctvs[i].V_AOV = 2 * Math.Atan(HE / (2 * Lens_FocalLength));
 
-                    // 기기 성능상의 최대 감시거리 (임시값)
-                    cctvs[i].Max_Dist = 50 * 100 * 10; // 50m (milimeter)
-                    // cctvs[i].Max_Dist = 500 * 100 * 100; // 500m (milimeter)
+                    cctvs[i].calcBlindToPed();          // (23-02-01) added by 0BoO
+                    cctvs[i].calcEffDistToPed(3000);     // (23-02-01) added by 0BoO, input value is 3000mm(3meter)
 
+                    // 기기 성능상의 최대 감시거리 (임시값)
+                    cctvs[i].Max_Dist = cctvs[i].Eff_Dist_To;//50 * 100 * 10; // 50m (milimeter)
+                    // cctvs[i].Max_Dist = 500 * 100 * 100; // 500m (milimeter)
+                    int L_Dist = (int)(cctvs[i].Eff_Dist_To - cctvs[i].Eff_Dist_From);
+                    double[] Dist2 = new double[L_Dist];
+                    
+                    for (int j=1;j < L_Dist; j++)
+                    {
+                        Dist2[j] = cctvs[i].Eff_Dist_From + j;
+                    }
 
                     cctvs[i].detectedPedIndex = new List<int>();
 
@@ -475,19 +514,19 @@ namespace surveillance_system
                     */
 
                     cctvs[i]
-                        .get_PixelDensity(Dist,
+                        .get_PixelDensity(Dist2,
                         cctvs[i].WD,
                         cctvs[i].HE,
                         cctvs[i].Focal_Length,
                         cctvs[i].imW,
                         cctvs[i].imH);
 
-                    cctvs[i].get_H_FOV(Dist, cctvs[i].WD, cctvs[i].Focal_Length, cctvs[i].ViewAngleH, cctvs[i].X, cctvs[i].Y);
-                    cctvs[i].get_V_FOV(Dist, cctvs[i].HE, cctvs[i].Focal_Length, cctvs[i].ViewAngleV, cctvs[i].X, cctvs[i].Z);
+                    cctvs[i].get_H_FOV(Dist2, cctvs[i].WD, cctvs[i].Focal_Length, cctvs[i].ViewAngleH, cctvs[i].X, cctvs[i].Y);
+                    cctvs[i].get_V_FOV(Dist2, cctvs[i].HE, cctvs[i].Focal_Length, cctvs[i].ViewAngleV, cctvs[i].X, cctvs[i].Z);
                     // cctvs[i].printCCTVInfo();
 
-                    cctvs[i].calcBlindToPed();          // (23-02-01) added by 0BoO
-                    cctvs[i].calcEffDistToPed(3000);     // (23-02-01) added by 0BoO, input value is 3000mm(3meter)
+                    //cctvs[i].calcBlindToPed();          // (23-02-01) added by 0BoO
+                    //cctvs[i].calcEffDistToPed(3000);     // (23-02-01) added by 0BoO, input value is 3000mm(3meter)
                 }
             }
             /* -------------------------------------------
@@ -648,6 +687,82 @@ namespace surveillance_system
             // Console.WriteLine("\n============ RESULT ============");
             // Console.WriteLine("CCTV: {0}, Ped: {1}", N_CCTV, N_Ped);
             // Console.WriteLine("Execution time : {0}\n", (accTime / 1000.0 ) + " sec");
+
+            if (On_Visualization)
+            {
+                MLApp.MLApp matlab = new MLApp.MLApp();
+                matlab.Execute(@"cd 'D:\Google 드라이브\Temporary Working\연구관련\CCTV 운용 시뮬레이션\Surveillance System (C#)\2021-2_SurveillanceSystem-main\surveillance_system\src\matlab_code'");
+                //matlab.Execute(@"cd 'C:\Users\0bookim\내 드라이브\Temporary Working\연구관련\CCTV 운용 시뮬레이션\Surveillance System (C#)\2021-2_SurveillanceSystem-main\surveillance_system\src\matlab_code'");
+
+                double[] X1;
+                double[] Y1;
+                double[] X2;
+                double[] Y2;
+
+                //double opt_precesionBorderLine = 0.001;
+                matlab.Execute(@"clear all;");
+                matlab.Execute(@"close all;");
+                matlab.Execute(@"figure;");
+                matlab.Execute(@"hold on;");
+
+                for (int i = 0; i < N_CCTV; i++)
+                {
+                    matlab.PutWorkspaceData("H_AOV", "base", cctvs[i].H_AOV);
+                    matlab.PutWorkspaceData("ViewAngleH", "base", cctvs[i].ViewAngleH);
+                    matlab.PutWorkspaceData("X", "base", cctvs[i].X);
+                    matlab.PutWorkspaceData("Y", "base", cctvs[i].Y);
+                    matlab.PutWorkspaceData("R_blind", "base", cctvs[i].Eff_Dist_From);
+                    matlab.PutWorkspaceData("R_eff", "base", cctvs[i].Eff_Dist_To);
+                    
+                    matlab.PutWorkspaceData("i", "base", i);
+
+                    matlab.PutWorkspaceData("CCTV_H_FOV_X0", "base", cctvs[i].H_FOV.X0);
+                    matlab.PutWorkspaceData("CCTV_H_FOV_X1", "base", cctvs[i].H_FOV.X1);
+                    matlab.PutWorkspaceData("CCTV_H_FOV_X2", "base", cctvs[i].H_FOV.X2);
+
+                    matlab.PutWorkspaceData("CCTV_H_FOV_Y0", "base", cctvs[i].H_FOV.Y0);
+                    matlab.PutWorkspaceData("CCTV_H_FOV_Y1", "base", cctvs[i].H_FOV.Y1);
+                    matlab.PutWorkspaceData("CCTV_H_FOV_Y2", "base", cctvs[i].H_FOV.Y2);
+
+
+                    matlab.Execute(@"[BorderLine_blind, BorderLine_eff, X, Y] = get_Sectoral_Coverage_CS(H_AOV, ViewAngleH, X, Y, R_blind, R_eff);");
+                    //matlab.Execute(@"X = cast(X,"double"); Y = cast(Y, "double");");
+                    matlab.Execute(@"plot(X, Y, 'o','MarkerFaceColor','red', 'MarkerEdgeColor','Blue');");
+                    matlab.Execute(@"text(X, Y, num2str(i));");
+
+                    matlab.Execute(@"plot(CCTV_H_FOV_X0, CCTV_H_FOV_Y0, '--');");
+                    matlab.Execute(@"plot(CCTV_H_FOV_X1, CCTV_H_FOV_Y1);");
+                    matlab.Execute(@"plot(CCTV_H_FOV_X2, CCTV_H_FOV_Y2)");
+
+
+                    matlab.Execute(@"BorderLine_blind_X(1,:) = BorderLine_blind(:,1);");
+                    matlab.Execute(@"BorderLine_blind_Y(1,:) = BorderLine_blind(:,2);");
+
+                    matlab.Execute(@"BorderLine_eff_X(1,:) = BorderLine_eff(:,1);");
+                    matlab.Execute(@"BorderLine_eff_Y(1,:) = BorderLine_eff(:,2);");
+
+                    matlab.Execute(@"plot(BorderLine_blind_X(1,:), BorderLine_blind_Y(1,:));");
+                    matlab.Execute(@"plot(BorderLine_eff_X(1,:), BorderLine_eff_Y(1,:)); ");
+                }
+
+                for (int j = 0; j < N_Ped; j++)
+                {
+                    matlab.PutWorkspaceData("Pos_H1", "base", peds[j].Pos_H1);
+                    matlab.PutWorkspaceData("Pos_H2", "base", peds[j].Pos_H2);
+                    matlab.PutWorkspaceData("Pos_V1", "base", peds[j].Pos_V1);
+                    matlab.PutWorkspaceData("Pos_V2", "base", peds[j].Pos_V2);
+
+                    matlab.Execute(@"plot([Pos_H1(1) Pos_H2(1)], [Pos_H1(2) Pos_H2(2)], 's-');");
+                }
+
+                matlab.Execute(@"grid on;");
+                matlab.Execute(@"xlabel('X-axis(mm)');ylabel('Y-axis(mm)')");
+                matlab.Execute(@"hold off;");
+                //MLApp.MLApp matlab = new MLApp.MLApp();
+                //matlab.Execute(@"figure;");
+                //matlab.Execute(@"plot(0:0.01:pi, sin(0:0.01:pi))");
+
+            }
         }
     }
 }

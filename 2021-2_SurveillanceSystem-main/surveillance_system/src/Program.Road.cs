@@ -45,13 +45,13 @@ namespace surveillance_system
                 {
                     for (int j = 0; j < lane_num; j++)
                     {
-                        DST[idx, 0] = (intvl + wd) * i + (wd / 2);
-                        DST[idx, 1] = (intvl + wd) * j + (wd / 2);
+                        DST[idx, 0] = (intvl + wd) * i + (wd * 0.5);
+                        DST[idx, 1] = (intvl + wd) * j + (wd * 0.5);
 
-                        intersectionArea[idx, 0] = DST[idx, 0] - (wd / 2); // x_min
-                        intersectionArea[idx, 1] = DST[idx, 0] + (wd / 2); // x_max
-                        intersectionArea[idx, 2] = DST[idx, 1] - (wd / 2); // y_min
-                        intersectionArea[idx, 3] = DST[idx, 1] + (wd / 2); // y_max
+                        intersectionArea[idx, 0] = DST[idx, 0] - (wd * 0.5); // x_min
+                        intersectionArea[idx, 1] = DST[idx, 0] + (wd * 0.5); // x_max
+                        intersectionArea[idx, 2] = DST[idx, 1] - (wd * 0.5); // y_min
+                        intersectionArea[idx, 3] = DST[idx, 1] + (wd * 0.5); // y_max
                         idx++;
                     }
                 }
@@ -98,12 +98,12 @@ namespace surveillance_system
             // 보행자 위치 처음 설정
             public void setPed(int n_ped)
             {
-                int[,] pedPos = new int[52,52];
+                int[,] pedPos = new int[52,52]; //(23-02-08) ?
                 for(int i = 0; i < n_ped; i++)
                 {
                     //Random rand = new Random(randSeed); // modified by 0boo 23-01-27
                     // int intersectidx = rand.Next(9);
-                    int intersectidx = rand.Next(36);
+                    int intersectidx = rand.Next(36); //(23-02-08) ?
 
                     // Console.WriteLine(intersectidx);
                     double[,] newPos = getPointOfAdjacentRoad(intersectidx);
