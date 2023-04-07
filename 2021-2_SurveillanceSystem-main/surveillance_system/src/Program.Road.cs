@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using static surveillance_system.Program;
 
 namespace surveillance_system
 {
@@ -29,6 +30,10 @@ namespace surveillance_system
             public int lane_num;
             public int interval;
             public int width;
+
+
+            public double[,] DIST_CCTV_DST;
+            public double[,] DIST_PED_DST;
 
             public void roadBuilder(int wd, int intvl, int n_interval, int n_cctv, int n_obj)
             {
@@ -74,9 +79,9 @@ namespace surveillance_system
 
                 for (int i = 0; i < lane_num; i++)
                 {
-                    lane_h[i, 0] = i * (intvl + wd) + (wd / 2);
-                    lane_h_upper[i, 0] = lane_h[i, 0] + wd / 2;
-                    lane_h_lower[i, 0] = lane_h[i, 0] - wd / 2;
+                    lane_h[i, 0] = i * (intvl + wd) + (wd * 0.5);
+                    lane_h_upper[i, 0] = lane_h[i, 0] + wd * 0.5;
+                    lane_h_lower[i, 0] = lane_h[i, 0] - wd * 0.5;
                 }
 
                 // 세로 도로 좌표 설정
@@ -85,13 +90,18 @@ namespace surveillance_system
                 lane_v_right = new double[lane_num, 1];
                 for (int i = 0; i < lane_num; i++)
                 {
-                    lane_v[i, 0] = i * (intvl + wd) + (wd / 2);
-                    lane_v_left[i, 0] = lane_h[i, 0] - wd / 2;
-                    lane_v_right[i, 0] = lane_h[i, 0] + wd / 2;
+                    lane_v[i, 0] = i * (intvl + wd) + (wd * 0.5);
+                    lane_v_left[i, 0] = lane_h[i, 0] - wd * 0.5;
+                    lane_v_right[i, 0] = lane_h[i, 0] + wd * 0.5;
                 }
 
-                setCCTV(n_cctv, wd, lane_num);
-                setPed(n_obj);
+                //setCCTV(n_cctv, wd, lane_num);
+                setCCTV_RandomPosition(n_cctv, wd, lane_num);
+                setPed_RandomPosition(n_obj, lane_num);
+
+
+                //setPed(n_obj);
+                
                 //setCar(n_obj);
             }
 
@@ -163,15 +173,15 @@ namespace surveillance_system
                     startX = DST[0, 0];
                     for (int j = 0; j < rootN; j++)
                     {
-                        cctvs[cctvIdx].X = (int)startX;
-                        cctvs[cctvIdx].Y = (int)startY;
+                        cctvs[cctvIdx].X = startX;
+                        cctvs[cctvIdx].Y = startY;
                         Console.WriteLine("cctv {0} {1} ", cctvs[cctvIdx].X , cctvs[cctvIdx].Y);
                         // Console.WriteLine("pos arr {0} {1} ", cctvs[i].Y / 10000, cctvs[i].X / 10000);
                         Console.WriteLine();
                         startX += intvl;
 
                         //debug
-			                  cctvPos[(cctvs[cctvIdx].Y)/10000, (cctvs[cctvIdx].X)/10000] += 1;
+			                  cctvPos[(int)(cctvs[cctvIdx].Y)/10000, (int)(cctvs[cctvIdx].X)/10000] += 1;
                         
                         cctvIdx++;
 
@@ -197,6 +207,82 @@ namespace surveillance_system
                 }
                   Console.WriteLine();
                 }
+            }
+            public void setPed_RandomPosition(int n_ped, int n_interval)
+            {
+                double Max_laneVector = road.laneVector[road.laneVector.Length - 1];
+                DIST_PED_DST = new double[n_ped, road.DST.GetLength(0)];
+
+                for (int i = 0; i < n_ped; i++)
+                {
+                    if (rand.NextDouble() > 0.5)
+                    {
+                        peds[i].X = road.laneVector.Max() * rand.NextDouble();
+                        peds[i].Y = road.lane_h[rand.Next(0, n_interval), 0];
+                    }
+                    else
+                    {
+                        peds[i].Y = road.laneVector.Max() * rand.NextDouble();
+                        peds[i].X = road.lane_h[rand.Next(0, n_interval), 0];
+                    }
+                    for (int j = 0; j < road.DST.GetLength(0); j++)
+                    {
+                        road.DIST_PED_DST[i, j] = Math.Sqrt(Math.Pow(peds[i].X - road.DST[j, 0], 2) + Math.Pow(peds[i].Y - road.DST[j, 1], 2));
+                    }
+                }
+
+                
+
+            }
+            public void setCCTV_RandomPosition(int n_cctv, int wd, int n_interval)
+            {
+                //int L_laneVector = road.laneVector.Length;
+                double Max_laneVector = road.laneVector[road.laneVector.Length-1];
+                //int L_laneH = road.lane_h.GetLength(0);
+                DIST_CCTV_DST = new double[n_cctv, road.DST.GetLength(0)];
+
+                for (int i = 0; i < n_cctv; i++) 
+                { 
+                    if (rand.NextDouble() > 0.5)
+                    {
+                        int rand_Y = (int)Math.Round(rand.NextDouble());
+
+                        if (rand_Y == 0)
+                        {
+                            rand_Y = -1;
+                        }
+
+                        //cctvs[i].X = -1 * wd * 0.5 + (Max_laneVector + wd) * rand.NextDouble();
+                        //cctvs[i].Y = road.lane_h[rand.Next(0,n_interval),0]* rand.NextDouble() + rand_Y*wd*0.5;
+                        cctvs[i].X = -1 * wd * 0.5 + (Max_laneVector + wd) * rand.NextDouble();
+                        cctvs[i].Y = road.lane_h[rand.Next(0, n_interval), 0] + rand_Y * wd * 0.5;
+                    }
+                    else 
+                    {
+                        int rand_X = (int)Math.Round(rand.NextDouble());
+
+                        if (rand_X == 0)
+                        {
+                            rand_X = -1;
+                        }
+
+                        //cctvs[i].X = road.lane_h[rand.Next(0, n_interval), 0] * rand.NextDouble() + rand_X * wd * 0.5; 
+                        //cctvs[i].Y = -1 * wd * 0.5 + (Max_laneVector + wd) * rand.NextDouble();
+                        cctvs[i].X = road.lane_h[rand.Next(0, n_interval), 0] + rand_X * wd * 0.5;
+                        cctvs[i].Y = -1 * wd * 0.5 + (Max_laneVector + wd) * rand.NextDouble();
+
+
+                    }
+
+                    for (int j = 0; j < road.DST.GetLength(0); j++)
+                    {
+                        road.DIST_CCTV_DST[i, j] = Math.Sqrt(Math.Pow(cctvs[i].X - road.DST[j, 0], 2) + Math.Pow(cctvs[i].Y - road.DST[j, 1], 2));
+                    }
+
+                }
+
+
+
             }
 
             public double[,] getPointOfAdjacentRoad(int currAreaIdx)
@@ -231,7 +317,7 @@ namespace surveillance_system
                 // newPos[0, 0] = rand.Next((int)intersectionArea[idx, 0], (int)intersectionArea[idx, 1]);
                 // newPos[0, 1] = rand.Next((int)intersectionArea[idx, 2], (int)intersectionArea[idx, 3]);
 
-                newPos[0, 0] = DST[idx, 0] ;
+                newPos[0, 0] = DST[idx, 0];
                 newPos[0, 1] = DST[idx, 1];
 
                 // Console.WriteLine("newpos {0} {1}", newPos[0, 0], newPos[0, 1]);

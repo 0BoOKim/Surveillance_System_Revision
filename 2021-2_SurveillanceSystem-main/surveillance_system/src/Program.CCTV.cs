@@ -170,11 +170,11 @@ namespace surveillance_system
 
         public class CCTV
         {
-            public int X;
+            public double X;
 
-            public int Y;
+            public double Y;
 
-            public int Z = 3000;
+            public double Z = 3000;
 
             public double WD;
 
@@ -234,6 +234,15 @@ namespace surveillance_system
                 // 양수 or 음수 예외처리x 에러 아니고 회전 방향 차이
                 ViewAngleH = angleH; //angleH * Math.PI / 180; // modified by 0BoO, deg -> rad
             }
+
+            public void setViewAngleH(double DST_X, double DST_Y)
+            {
+                double[] A = { DST_X - X, DST_Y - Y };
+                double[] B = { 1.0, 0};
+                //ViewAngleH = angleH; //angleH * Math.PI / 180; 
+                ViewAngleH = Math.Acos(InnerProduct(A, B) / (Norm(A) * Norm(B)));
+            }
+
             public void setViewAngleV(double angleV)
             {
               // angleV default value is -35

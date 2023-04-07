@@ -23,7 +23,9 @@ namespace surveillance_system
         const double aUnitTime = 100 * 0.001; // (sec) default value: 100 ms
         public static Road road = new Road();
 
-        const bool On_Visualization = true;
+        const bool On_Visualization = false;
+        const bool Opt_Observation = true;
+        const bool Opt_Demo = false;
 
         /* --------------------------------------
          * 추적 여부 검사 함수
@@ -131,9 +133,11 @@ namespace surveillance_system
                     int v_detected = -1;
 
                     // 거리가 범위 내이면 --> (23-02-07) cctv와 개체 간의 거리가 유효 거리 범위이면 
-                    if (candidate_detected_ped1[i, j] == 1 || candidate_detected_ped2[i, j] == 1)//if (candidate_detected_ped_h[i, j] == 1)
+                    if (candidate_detected_ped1[i, j] == 1 && candidate_detected_ped2[i, j] == 1)//if (candidate_detected_ped_h[i, j] == 1)
                     {
                         // len equals Dist
+                        returnArr[j] = (returnArr[j] == 1 ? 1 : -1); // (23-04-03)
+
                         int len = cctvs[i].H_FOV.X0.GetLength(0);
                         double[] A = { cctvs[i].H_FOV.X0[len - 1] - cctvs[i].X, cctvs[i].H_FOV.Y0[len - 1] - cctvs[i].Y };
                         double[] B = { peds[j].Pos_H1[0] - cctvs[i].X, peds[j].Pos_H1[1] - cctvs[i].Y };
@@ -156,14 +160,19 @@ namespace surveillance_system
                     }
 
                     // vertical  각도 검사 --> (23-02-07) 비효율적이지만, 검증 및 디버깅을 위해 남겨둠
-                    if (candidate_detected_ped1[i, j] == 1 || candidate_detected_ped2[i, j] == 1) //if (candidate_detected_ped_v[i, j] == 1)
+                    //                     --> (23-04-03) 필요한 코드로 판별됨
+                    //                                    horizontal domain 상에서 유효 거리 이내여도,
+                    //                                    vertical domain 측면에서 target은 감시 영역을 벗어날 수 있음.
+                    if (candidate_detected_ped1[i, j] == 1 && candidate_detected_ped2[i, j] == 1) //if (candidate_detected_ped_v[i, j] == 1)
                     {
-                      // Surv_SYS_v210202.m [line 260]
-                      /*         
-                        if ismember(j, Candidates_Detected_PED_V1)
-                        A = [CCTV(i).V_FOV_X0(1,:); CCTV(i).V_FOV_Z0(1,:)] - [CCTV(i).X; CCTV(i).Z];
-                        B = [PED(j).Pos_V1(1); PED(j).Pos_V1(2)] - [CCTV(i).X; CCTV(i).Z]; 
-                      */
+                        // Surv_SYS_v210202.m [line 260]
+                        /*         
+                          if ismember(j, Candidates_Detected_PED_V1)
+                          A = [CCTV(i).V_FOV_X0(1,:); CCTV(i).V_FOV_Z0(1,:)] - [CCTV(i).X; CCTV(i).Z];
+                          B = [PED(j).Pos_V1(1); PED(j).Pos_V1(2)] - [CCTV(i).X; CCTV(i).Z]; 
+                        */
+                        returnArr[j] = (returnArr[j] == 1 ? 1 : -1); // (23-04-03)
+
                         int len = cctvs[i].V_FOV.X0.GetLength(0);
                         double[] A = { cctvs[i].V_FOV.X0[len - 1] - cctvs[i].X, cctvs[i].V_FOV.Z0[len - 1] - cctvs[i].Z };
                         double[] B = { peds[j].Pos_V1[0] - cctvs[i].X, peds[j].Pos_V1[1] - cctvs[i].Z };
@@ -181,6 +190,7 @@ namespace surveillance_system
                         else
                         {
                             v_detected = 0;
+                            
                         }
                     }
 
@@ -204,7 +214,12 @@ namespace surveillance_system
 
                         if(v_detected == 0) missed_map_v[i, j] = 1;
 
-                        returnArr[j] = (returnArr[j] == 1 ? 1 : -1);
+                        //if (returnArr[j] == 1) Console.WriteLine("unexpected value in returnArr at checkDetection()!");
+
+                        //returnArr[j] = (returnArr[j] == 1 ? 1 : -1); // (note_230328) returnArr[j] = -1; 로 대체하면 어떻게 되는가? 
+                                                                     // (note_230328) 다른 CCTV에 이미 탐지된 j를 탐지되지 않은 것으로 처리되지 않도록 하기 위함.
+
+                        
 
                         /*
                         if(h_detected != 1)
@@ -284,8 +299,8 @@ namespace surveillance_system
             -------------------------------------------------------------------------*/
             // Configuration: surveillance cameras
             // constant
-            const int N_CCTV = 9;
-            const int N_Ped = 10;
+            const int N_CCTV = 20;
+            const int N_Ped = 5;
 
             //Random rand = new Random(randSeed); // modified by 0boo 23-01-27
 
@@ -317,17 +332,21 @@ namespace surveillance_system
                 //Road_N_Interval = 3;//5;
 
                 // set 2
-                Road_Width = 1000; // mm
-                Road_Interval = 88000; // mm, 10 meter
+                Road_Width = 10000;// 1000; // mm
+                Road_Interval = 25000;//88000; // mm, 10 meter
                 Road_N_Interval = 5;
             }
 
-            bool Opt_Observation = false;
-            bool Opt_Demo = false;
-            int[] log_PED_position = null;
+            
+            double[] log_PED_position = null;
             if (Opt_Demo)
             {
-                log_PED_position = new int[5];
+                
+                StreamWriter writer;
+                writer = File.CreateText("log_PED_Position.out");
+                writer.Flush();
+                writer.Close();
+
             }
             // time check start
             // double accTime = 0.0;
@@ -419,16 +438,16 @@ namespace surveillance_system
 
 
                 //ped init
-                foreach(Pedestrian ped in peds)
+                for (int i = 0; i < N_Ped; i++)
                 {
                     double minDist = 0.0;
                     //int idx_minDist = 0;
                     //double[] Dist_Map = new double[road.DST.GetLength(0)];
 
                     // 맨처음 위치에서 가장 가까운 도착지를 설정 (보행자 맨처음 위치는 setPed()로 설정)
-                    double[,] newPos = road.getPointOfAdjacentRoad(road.getIdxOfIntersection(ped.X, ped.Y));
-                    double dst_x = Math.Round(newPos[0, 0]);
-                    double dst_y = Math.Round(newPos[0, 1]);
+                    //double[,] newPos = road.getPointOfAdjacentRoad(road.getIdxOfIntersection(ped.X, ped.Y));
+                    //double dst_x = Math.Round(newPos[0, 0]);
+                    //double dst_y = Math.Round(newPos[0, 1]);
 
                     // Car object일경우 가까운 도착지 설정
                     // double[,] newPos = road.getPointOfAdjacentIntersection(road.getIdxOfIntersection(ped.X, ped.Y), ped.X, ped.Y);
@@ -436,7 +455,7 @@ namespace surveillance_system
                     // double dst_y = Math.Round(newPos[0, 1]);
 
                     //Calc_Dist_and_get_MinDist(road.DST, ped.X, ped.Y, ref Dist_Map, ref minDist, ref idx_minDist);
-                    
+
                     //double dst_x = road.DST[idx_minDist, 0];
                     //double dst_y = road.DST[idx_minDist, 1];
 
@@ -453,11 +472,26 @@ namespace surveillance_system
                         direction = Math.Round(2 * Math.PI - direction, 8); 
                     }
                     */
-                    ped.define_PED(Ped_Width, Ped_Height, dst_x, dst_y, Ped_Velocity);
-                    ped.setDirection();
-                    ped.TTL = (int)Math.Ceiling((minDist / ped.Velocity) / aUnitTime);
-                    ped.printPedInfo();
+                    double Target_DST_X = road.DST[0, 0];
+                    double Target_DST_Y = road.DST[0, 1];
+                    double minDIST = road.DIST_PED_DST[i, 0];
+                    for (int j = 1; j < road.DST.GetLength(0); j++)
+                    {
+                        if (road.DIST_PED_DST[i, j] < minDIST)
+                        {
+                            minDIST = road.DIST_PED_DST[i, j];
+                            Target_DST_X = road.DST[j, 0];
+                            Target_DST_Y = road.DST[j, 1];
+                        }
+
+                    }
+                    peds[i].define_PED(Ped_Width, Ped_Height, Target_DST_X, Target_DST_Y, Ped_Velocity);
+                    //ped.updateDestination();   
+                    peds[i].setDirection();
+                    peds[i].TTL = (int)Math.Ceiling((minDist / peds[i].Velocity) / aUnitTime);
+                    peds[i].printPedInfo();
                 }
+
                 // cctv init
                 for (int i = 0; i < N_CCTV; i++)
                 {
@@ -480,8 +514,24 @@ namespace surveillance_system
                     // 220104 초기 각도 설정
                     // cctvs[i].ViewAngleH = rand.NextDouble() * 360;
                     // cctvs[i].ViewAngleV = -35 - 20 * rand.NextDouble();
+                    double Target_DST_X = road.DST[0, 0];
+                    double Target_DST_Y = road.DST[0, 1];
+                    double minDIST = road.DIST_CCTV_DST[i,0];
+                    for (int j = 1; j < road.DST.GetLength(0); j++)
+                    {
+                        if (road.DIST_CCTV_DST[i, j] < minDIST)
+                        {
+                            minDIST = road.DIST_CCTV_DST[i, j];
+                            Target_DST_X = road.DST[j, 0];
+                            Target_DST_Y = road.DST[j, 1];
+                        }
 
-                    cctvs[i].setViewAngleH(rand.NextDouble() * 360*Math.PI/180);  // (23-02-02) modified by 0BoO, deg -> rad
+                    }
+
+                    //cctvs[i].setViewAngleH(rand.NextDouble() * 360*Math.PI/180);  // (23-02-02) modified by 0BoO, deg -> rad
+                    cctvs[i].setViewAngleH(Target_DST_X, Target_DST_Y);
+
+
                     // cctvs[i].setViewAngleH(rand.Next(4) * 90);
                     // cctvs[i].setViewAngleV(-35 - 20 * rand.NextDouble());
                     cctvs[i].setViewAngleV(-45.0 * Math.PI / 180);   // (23-02-02) modified by 0BoO, deg -> rad
@@ -501,7 +551,7 @@ namespace surveillance_system
                     int L_Dist = (int)(cctvs[i].Eff_Dist_To - cctvs[i].Eff_Dist_From);
                     double[] Dist2 = new double[L_Dist];
                     
-                    for (int j=1;j < L_Dist; j++)
+                    for (int j = 1 ;j < L_Dist; j++)
                     {
                         Dist2[j] = cctvs[i].Eff_Dist_From + j;
                     }
@@ -567,7 +617,7 @@ namespace surveillance_system
                     detection[i] += Convert.ToString(res[i]) + ",";
 
                     if (res[i] == 0) outOfRange[i]++;
-                    else if (res[i] == -1) directionError[i]++;
+                    else if (res[i] == -1) { outOfRange[i]++; directionError[i]++; } 
                     else if (res[i] == 1) R_Surv_Time[i]++;
                 }
 
@@ -623,6 +673,162 @@ namespace surveillance_system
                                 cctvs[i].get_H_FOV(Dist, cctvs[i].WD, cctvs[i].Focal_Length, cctvs[i].ViewAngleH, cctvs[i].X, cctvs[i].Y);
                         }
                     }
+                }
+
+                if (Opt_Observation)
+                {
+                    MLApp.MLApp matlab = new MLApp.MLApp();
+
+                    // fixed components
+                    if (Now == 0) 
+                    {
+                        matlab.Execute(@"cd 'D:\Google 드라이브\Temporary Working\연구관련\CCTV 운용 시뮬레이션\Surveillance System (C#)\2021-2_SurveillanceSystem-main\surveillance_system\src\matlab_code'");
+                        //matlab.Execute(@"cd 'C:\Users\0bookim\내 드라이브\Temporary Working\연구관련\CCTV 운용 시뮬레이션\Surveillance System (C#)\2021-2_SurveillanceSystem-main\surveillance_system\src\matlab_code'");
+
+                        //double opt_precesionBorderLine = 0.001;
+                        matlab.Execute(@"clear all;");
+                        matlab.Execute(@"close all;");
+                        matlab.Execute(@"figure;");
+                        matlab.Execute(@"hold on;");
+
+                        for (int i = 0; i < N_CCTV; i++)
+                        {
+                            matlab.PutWorkspaceData("H_AOV", "base", cctvs[i].H_AOV);
+                            matlab.PutWorkspaceData("ViewAngleH", "base", cctvs[i].ViewAngleH);
+                            matlab.PutWorkspaceData("X", "base", cctvs[i].X);
+                            matlab.PutWorkspaceData("Y", "base", cctvs[i].Y);
+                            matlab.PutWorkspaceData("R_blind", "base", cctvs[i].Eff_Dist_From);
+                            matlab.PutWorkspaceData("R_eff", "base", cctvs[i].Eff_Dist_To);
+
+                            matlab.PutWorkspaceData("i", "base", i);
+
+                            matlab.PutWorkspaceData("CCTV_H_FOV_X0", "base", cctvs[i].H_FOV.X0);
+                            matlab.PutWorkspaceData("CCTV_H_FOV_X1", "base", cctvs[i].H_FOV.X1);
+                            matlab.PutWorkspaceData("CCTV_H_FOV_X2", "base", cctvs[i].H_FOV.X2);
+
+                            matlab.PutWorkspaceData("CCTV_H_FOV_Y0", "base", cctvs[i].H_FOV.Y0);
+                            matlab.PutWorkspaceData("CCTV_H_FOV_Y1", "base", cctvs[i].H_FOV.Y1);
+                            matlab.PutWorkspaceData("CCTV_H_FOV_Y2", "base", cctvs[i].H_FOV.Y2);
+
+
+                            matlab.Execute(@"[BorderLine_blind, BorderLine_eff, X, Y] = get_Sectoral_Coverage_CS(H_AOV, ViewAngleH, X, Y, R_blind, R_eff);");
+                            //matlab.Execute(@"X = cast(X,"double"); Y = cast(Y, "double");");
+                            matlab.Execute(@"plot(X, Y, 'o','MarkerFaceColor','red', 'MarkerEdgeColor','Blue');");
+                            matlab.Execute(@"text(X, Y, num2str(i));");
+
+                            matlab.Execute(@"plot(CCTV_H_FOV_X0, CCTV_H_FOV_Y0, '--');");
+                            matlab.Execute(@"plot(CCTV_H_FOV_X1, CCTV_H_FOV_Y1);");
+                            matlab.Execute(@"plot(CCTV_H_FOV_X2, CCTV_H_FOV_Y2)");
+
+
+                            matlab.Execute(@"BorderLine_blind_X(1,:) = BorderLine_blind(:,1);");
+                            matlab.Execute(@"BorderLine_blind_Y(1,:) = BorderLine_blind(:,2);");
+
+                            matlab.Execute(@"BorderLine_eff_X(1,:) = BorderLine_eff(:,1);");
+                            matlab.Execute(@"BorderLine_eff_Y(1,:) = BorderLine_eff(:,2);");
+
+                            matlab.Execute(@"plot(BorderLine_blind_X(1,:), BorderLine_blind_Y(1,:));");
+                            matlab.Execute(@"plot(BorderLine_eff_X(1,:), BorderLine_eff_Y(1,:)); ");
+                        }
+                        int L_DST_row = road.DST.GetLength(0);
+                        //int L_DST_col = road.DST.GetLength(1);
+
+                        for (int j = 0; j < L_DST_row; j++)
+                        {
+
+                            matlab.PutWorkspaceData("DST_X", "base", road.DST[j, 0]);
+                            matlab.PutWorkspaceData("DST_Y", "base", road.DST[j, 1]);
+                            matlab.Execute(@"plot(DST_X, DST_Y, 'p');");
+
+                        }
+                        int L_intersection_row = road.intersectionArea.GetLength(0);
+                        //int L_intersection_col = road.intersectionArea.GetLength(1);
+                        for (int j = 0; j < L_intersection_row; j++)
+                        {
+
+                            matlab.PutWorkspaceData("intersection_X1", "base", road.intersectionArea[j, 0]);
+                            matlab.PutWorkspaceData("intersection_Y1", "base", road.intersectionArea[j, 2]);
+                            matlab.PutWorkspaceData("intersection_X2", "base", road.intersectionArea[j, 1]);
+                            matlab.PutWorkspaceData("intersection_Y2", "base", road.intersectionArea[j, 3]);
+                            //matlab.Execute(@"plot([intersection_X1 intersection_X2],[intersection_Y1 intersection_Y2], 'k.-');");
+
+                        }
+
+                        int L_roadVector = road.laneVector.Length;
+                        int L_roadLaneH = road.lane_h.GetLength(0);
+                        int L_roadLaneV = road.lane_v.GetLength(0);
+
+                        matlab.PutWorkspaceData("lane_vector", "base", road.laneVector);
+
+
+                        for (int h = 0; h < L_roadLaneH; h++)
+                        {
+                            matlab.PutWorkspaceData("lane_h", "base", road.lane_h[h, 0]);
+                            matlab.PutWorkspaceData("lane_h_upper", "base", road.lane_h_upper[h, 0]);
+                            matlab.PutWorkspaceData("lane_h_lower", "base", road.lane_h_lower[h, 0]);
+
+                            matlab.Execute(@"LANE_H = ones(1,length(lane_vector))*lane_h;");
+                            matlab.Execute(@"LANE_HU = ones(1,length(lane_vector))*lane_h_upper;");
+                            matlab.Execute(@"LANE_HL = ones(1,length(lane_vector))*lane_h_lower;");
+
+                            matlab.Execute(@"plot(lane_vector,LANE_H,'--');");
+                            matlab.Execute(@"plot(lane_vector,LANE_HU,'-');");
+                            matlab.Execute(@"plot(lane_vector,LANE_HL,'-');");
+                        }
+
+                        for (int v = 0; v < L_roadLaneV; v++)
+                        {
+                            matlab.PutWorkspaceData("lane_v", "base", road.lane_v[v, 0]);
+                            matlab.PutWorkspaceData("lane_v_left", "base", road.lane_v_left[v, 0]);
+                            matlab.PutWorkspaceData("lane_v_right", "base", road.lane_v_right[v, 0]);
+
+                            matlab.Execute(@"LANE_V = ones(1,length(lane_vector))*lane_v;");
+                            matlab.Execute(@"LANE_VL = ones(1,length(lane_vector))*lane_v_left;");
+                            matlab.Execute(@"LANE_VR = ones(1,length(lane_vector))*lane_v_right;");
+
+                            matlab.Execute(@"plot(LANE_V,lane_vector,'--');");
+                            matlab.Execute(@"plot(LANE_VL,lane_vector,'-');");
+                            matlab.Execute(@"plot(LANE_VR,lane_vector,'-');");
+                        }
+
+                        matlab.Execute(@"grid on;");
+                        matlab.Execute(@"xlabel('X-axis(mm)');ylabel('Y-axis(mm)')");
+                    }
+
+
+
+                    // variable components
+                    // pedestrians
+
+                    for (int j = 0; j < N_Ped; j++)
+                    {
+                        matlab.PutWorkspaceData("Pos_H1", "base", peds[j].Pos_H1);
+                        matlab.PutWorkspaceData("Pos_H2", "base", peds[j].Pos_H2);
+                        matlab.PutWorkspaceData("Pos_V1", "base", peds[j].Pos_V1);
+                        matlab.PutWorkspaceData("Pos_V2", "base", peds[j].Pos_V2);
+
+                        matlab.Execute(@"plot([Pos_H1(1) Pos_H2(1)], [Pos_H1(2) Pos_H2(2)], 's-');");
+                    }
+
+                    matlab.PutWorkspaceData("Now", "base", Now);
+                    matlab.Execute(@"title(['Time = ', num2str(Now), ' sec'] );");
+                    matlab.Execute(@"pause(0.1);");
+                    // (TBD) performance
+                }
+                
+                if (Opt_Demo) 
+                {
+                    //var log_FilePath1 = @"log_PED_Position.txt";
+                    //var log_result1 = new StreamWriter(log_FilePath1);
+                    StreamWriter writer;
+                    writer = File.AppendText("log_PED_Position.out");
+
+                    for (int i = 0; i < N_Ped; i++)
+                    {
+                        writer.WriteLine("{0:F} {1:F2} {2:F2} {3:F2} {4:F2}", Now, peds[i].Pos_H1[0], peds[i].Pos_H1[1], peds[i].Pos_H2[0], peds[i].Pos_H2[1]);
+                    }
+
+                    writer.Close();
                 }
 
                 header += Convert.ToString(Math.Round(Now,1))+",";
@@ -691,6 +897,7 @@ namespace surveillance_system
             if (On_Visualization)
             {
                 MLApp.MLApp matlab = new MLApp.MLApp();
+                
                 matlab.Execute(@"cd 'D:\Google 드라이브\Temporary Working\연구관련\CCTV 운용 시뮬레이션\Surveillance System (C#)\2021-2_SurveillanceSystem-main\surveillance_system\src\matlab_code'");
                 //matlab.Execute(@"cd 'C:\Users\0bookim\내 드라이브\Temporary Working\연구관련\CCTV 운용 시뮬레이션\Surveillance System (C#)\2021-2_SurveillanceSystem-main\surveillance_system\src\matlab_code'");
 
@@ -755,6 +962,67 @@ namespace surveillance_system
                     matlab.Execute(@"plot([Pos_H1(1) Pos_H2(1)], [Pos_H1(2) Pos_H2(2)], 's-');");
                 }
 
+                int L_DST_row = road.DST.GetLength(0);
+                //int L_DST_col = road.DST.GetLength(1);
+
+                for (int j = 0; j < L_DST_row; j++)
+                {
+                    
+                        matlab.PutWorkspaceData("DST_X", "base",road.DST[j,0]);
+                        matlab.PutWorkspaceData("DST_Y", "base", road.DST[j, 1]);
+                        matlab.Execute(@"plot(DST_X, DST_Y, 'p');");
+                    
+                }
+                int L_intersection_row = road.intersectionArea.GetLength(0);
+                //int L_intersection_col = road.intersectionArea.GetLength(1);
+                for (int j =0; j < L_intersection_row; j++)
+                {
+                    
+                        matlab.PutWorkspaceData("intersection_X1", "base", road.intersectionArea[j, 0]);
+                        matlab.PutWorkspaceData("intersection_Y1", "base", road.intersectionArea[j, 2]);
+                        matlab.PutWorkspaceData("intersection_X2", "base", road.intersectionArea[j, 1]);
+                        matlab.PutWorkspaceData("intersection_Y2", "base", road.intersectionArea[j, 3]);
+                        //matlab.Execute(@"plot([intersection_X1 intersection_X2],[intersection_Y1 intersection_Y2], 'k.-');");
+                   
+                }
+
+                int L_roadVector = road.laneVector.Length;
+                int L_roadLaneH = road.lane_h.GetLength(0);
+                int L_roadLaneV = road.lane_v.GetLength(0);
+
+                matlab.PutWorkspaceData("lane_vector", "base", road.laneVector);
+               
+
+                for (int h = 0; h < L_roadLaneH; h++)
+                {
+                    matlab.PutWorkspaceData("lane_h", "base", road.lane_h[h, 0]);
+                    matlab.PutWorkspaceData("lane_h_upper", "base", road.lane_h_upper[h, 0]);
+                    matlab.PutWorkspaceData("lane_h_lower", "base", road.lane_h_lower[h, 0]);
+
+                    matlab.Execute(@"LANE_H = ones(1,length(lane_vector))*lane_h;");
+                    matlab.Execute(@"LANE_HU = ones(1,length(lane_vector))*lane_h_upper;");
+                    matlab.Execute(@"LANE_HL = ones(1,length(lane_vector))*lane_h_lower;");
+
+                    matlab.Execute(@"plot(lane_vector,LANE_H,'--');");
+                    matlab.Execute(@"plot(lane_vector,LANE_HU,'-');");
+                    matlab.Execute(@"plot(lane_vector,LANE_HL,'-');");
+                }
+
+                for (int v = 0; v < L_roadLaneV; v++)
+                {
+                    matlab.PutWorkspaceData("lane_v", "base", road.lane_v[v, 0]);
+                    matlab.PutWorkspaceData("lane_v_left", "base", road.lane_v_left[v, 0]);
+                    matlab.PutWorkspaceData("lane_v_right", "base", road.lane_v_right[v, 0]);
+
+                    matlab.Execute(@"LANE_V = ones(1,length(lane_vector))*lane_v;");
+                    matlab.Execute(@"LANE_VL = ones(1,length(lane_vector))*lane_v_left;");
+                    matlab.Execute(@"LANE_VR = ones(1,length(lane_vector))*lane_v_right;");
+
+                    matlab.Execute(@"plot(LANE_V,lane_vector,'--');");
+                    matlab.Execute(@"plot(LANE_VL,lane_vector,'-');");
+                    matlab.Execute(@"plot(LANE_VR,lane_vector,'-');");
+                }
+
                 matlab.Execute(@"grid on;");
                 matlab.Execute(@"xlabel('X-axis(mm)');ylabel('Y-axis(mm)')");
                 matlab.Execute(@"hold off;");
@@ -762,6 +1030,14 @@ namespace surveillance_system
                 //matlab.Execute(@"figure;");
                 //matlab.Execute(@"plot(0:0.01:pi, sin(0:0.01:pi))");
 
+            }
+
+            if (Opt_Demo) 
+            {
+                MLApp.MLApp matlab = new MLApp.MLApp();
+                //matlab.Execute(@"cd 'D:\Google 드라이브\Temporary Working\연구관련\CCTV 운용 시뮬레이션\Surveillance System (C#)\2021-2_SurveillanceSystem-main\surveillance_system\src\matlab_code'");
+                matlab.Execute(@"cd 'C:\Users\0bookim\내 드라이브\Temporary Working\연구관련\CCTV 운용 시뮬레이션\Surveillance System (C#)\2021-2_SurveillanceSystem-main\surveillance_system\src\matlab_code'");
+                matlab.Execute(@"Sim_Demo");
             }
         }
     }
