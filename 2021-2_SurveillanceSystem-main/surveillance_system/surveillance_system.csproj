@@ -18,5 +18,8 @@
       <EmbedInteropTypes>true</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="EPPlus" Version="5.8.14" />
+  </ItemGroup>
 
 </Project>

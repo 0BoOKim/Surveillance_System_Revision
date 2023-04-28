@@ -38,6 +38,8 @@ namespace surveillance_system
             public double[] Pos_V1 = new double[2];
             public double[] Pos_V2 = new double[2];
 
+            public double[,] Spatial_Resolution;
+
             public int N_Surv; //number of surveillance camera viewing this target.
 
             public int TTL;
@@ -46,7 +48,8 @@ namespace surveillance_system
                 double Height,
                 double DST_X,
                 double DST_Y,
-                double Velocity
+                double Velocity,
+                int N_CCTV
             )
             {
                 //Random rand = new Random(randSeed); // modified by 0boo 23-01-27
@@ -81,6 +84,9 @@ namespace surveillance_system
 
                 // % for performace measure
                 this.N_Surv = 0;
+
+                this.Spatial_Resolution = new double[N_CCTV, 11];
+                // [Out of Range(0), Direction Miss(-1), Detected(1)]  SR(Width1, Width2, Height1,Height2) numPixels(Width1, Width2, Height1,Height2) areaPixels(min, max)
             }
 
             public void setDirection()
