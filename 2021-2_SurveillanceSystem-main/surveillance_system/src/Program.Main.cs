@@ -18,12 +18,12 @@ namespace surveillance_system
     {
         //static int randSeed = 1734;
         //public static Random rand = new Random(randSeed); // modified by 0boo 23-01-27
-        static string Sim_ID = "230420-30";
+        static string Sim_ID = "230502_TEST";
         static int numSim = 10;
         static int initRandSeed = 1731;
         static int[] randSeedList = new int [numSim];
 
-        const int param_N_CCTV = 300;
+        const int param_N_CCTV = 10;
 
         public static Random rand; // modified by 0boo 23-01-27
 
@@ -330,6 +330,7 @@ namespace surveillance_system
         
         static void Main(string[] args)
         {
+
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
             /*------------------------------------------------------------------------
@@ -343,12 +344,13 @@ namespace surveillance_system
 
             for (int idx_sim = 0; idx_sim < numSim; idx_sim++) 
             {
+                
                 rand = new Random(randSeedList[idx_sim]);
 
                 // Configuration: surveillance cameras
                 // constant
-                const int N_CCTV = param_N_CCTV;
-                const int N_Ped = 10;
+                int N_CCTV = param_N_CCTV;
+                int N_Ped = 10;
 
                 //Random rand = new Random(randSeed); // modified by 0boo 23-01-27
 
@@ -372,6 +374,18 @@ namespace surveillance_system
                 int Road_Width = 0;
                 int Road_Interval = 0;
                 int Road_N_Interval = 0;
+
+                if (args.Length > 0)
+                {
+                    Sim_ID = args[0];
+                    N_CCTV = int.Parse(args[1]);
+                    N_Ped  = int.Parse(args[2]);
+
+                    Console.WriteLine(Sim_ID);
+                    Console.WriteLine("N_CCTV = {0}", N_CCTV);
+                    Console.WriteLine("N_Ped = {0}", N_Ped);
+                }
+
                 if (On_Road_Builder)
                 {
                     // set 1
@@ -468,7 +482,7 @@ namespace surveillance_system
 
                     }
                     */
-                    road.printRoadInfo();
+                    //road.printRoadInfo();
 
 
                     /*
@@ -538,7 +552,7 @@ namespace surveillance_system
                         //ped.updateDestination();   
                         peds[i].setDirection();
                         peds[i].TTL = (int)Math.Ceiling((minDist / peds[i].Velocity) / aUnitTime);
-                        peds[i].printPedInfo();
+                        //peds[i].printPedInfo();
                     }
 
                     // cctv init
@@ -1200,8 +1214,15 @@ namespace surveillance_system
                     matlab.Execute(@"Sim_Demo");
                 }
             }
-            
 
+            if (args.Length == 0) 
+            {
+                Console.Beep(1000, 1000);
+                Console.Beep(1000, 1000);
+                Console.Beep(1000, 1000);
+                Console.Beep(1000, 1000);
+                Console.Beep(1000, 1000);
+            }
             
         }
     }
