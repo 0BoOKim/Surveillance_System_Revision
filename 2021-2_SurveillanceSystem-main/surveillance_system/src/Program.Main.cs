@@ -19,12 +19,13 @@ namespace surveillance_system
     {
         //static int randSeed = 1734;
         //public static Random rand = new Random(randSeed); // modified by 0boo 23-01-27
-        static string Sim_ID = "230504_TEST";
-        static int numSim = 1;
+        static string Sim_ID = "230713_TEST";
+        static int numSim = 5;
         static int initRandSeed = 1731;
         static int[] randSeedList = new int [numSim];
 
         const int param_N_CCTV = 10;
+        const int param_N_PED = 10;
 
         public static Random rand; // modified by 0boo 23-01-27
 
@@ -38,7 +39,7 @@ namespace surveillance_system
         const bool On_Visualization = false;
         const bool Opt_Observation = false;
         const bool Opt_Demo = false;
-        const bool Opt_Log = true; // to get log of events
+        const bool Opt_Log = false; // to get log of events
 
         /* --------------------------------------
          * 추적 여부 검사 함수
@@ -619,7 +620,7 @@ namespace surveillance_system
                 // Configuration: surveillance cameras
                 // constant
                 int N_CCTV = param_N_CCTV;
-                int N_Ped = 500;
+                int N_Ped = param_N_PED;
 
                 //Random rand = new Random(randSeed); // modified by 0boo 23-01-27
 
@@ -644,6 +645,7 @@ namespace surveillance_system
                 int Road_Interval = 0;
                 int Road_N_Interval = 0;
 
+                Console.WriteLine("\n\nRepetition No. {0}", idx_sim);
                 if (args.Length > 0)
                 {
                     Sim_ID = args[0];
@@ -654,7 +656,7 @@ namespace surveillance_system
                     Console.WriteLine("N_CCTV = {0}", N_CCTV);
                     Console.WriteLine("N_Ped = {0}", N_Ped);
                 }
-
+                
                 if (On_Road_Builder)
                 {
                     // set 1
@@ -839,7 +841,7 @@ namespace surveillance_system
                         //     (int)Math.Ceiling(rand.NextDouble() * (Height.Max() - 3000)) + 3000; // milimeter
 
                         //cctvs[i].setZ((int)Math.Ceiling(rand.NextDouble() * (Height.Max() - 3000)) + 6000);
-                        cctvs[i].setZ(5000);
+                        cctvs[i].setZ(10000);
                         cctvs[i].WD = WD;
                         cctvs[i].HE = HE;
                         cctvs[i].imW = (int)imW;
@@ -924,6 +926,8 @@ namespace surveillance_system
                 int[] R_Surv_Time = new int[N_Ped]; // 탐지 
                 int[] directionError = new int[N_Ped]; // 방향 미스
                 int[] outOfRange = new int[N_Ped]; // 거리 범위 밖
+                double[] minSpatialResolution = new double[N_Ped];  // the cummulative spatial resolution(min)
+                double[] maxSpatialResolution = new double[N_Ped];  // the cummulative spatial resolution(max)
 
                 string[] traffic_x = new string[(int)(Sim_Time / aUnitTime)]; // csv 파일 출력 위한 보행자별 x좌표
                 string[] traffic_y = new string[(int)(Sim_Time / aUnitTime)]; // csv 파일 출력 위한 보행자별 y좌표
@@ -1010,7 +1014,35 @@ namespace surveillance_system
                         writer.Close();
                     }
 
+                    for (int j = 0; j < N_Ped; j++)
+                    {
+                        double Temp_min_SR = peds[j].Spatial_Resolution[0, 9];
+                        double Temp_max_SR = peds[j].Spatial_Resolution[0, 10];
 
+                        for (int i = 1; i < N_CCTV; i++)
+                        {
+                            
+
+                            if (peds[j].Spatial_Resolution[i, 0] != 0)
+                            {
+                                if (peds[j].Spatial_Resolution[i, 9] < Temp_min_SR)
+                                {
+                                    Temp_min_SR = peds[j].Spatial_Resolution[i, 9];
+                                }
+                                
+                                if (peds[j].Spatial_Resolution[i, 10] > Temp_max_SR)
+                                {
+                                    Temp_max_SR = peds[j].Spatial_Resolution[i, 10];
+                                }
+
+                            }
+
+
+                        }
+
+                        minSpatialResolution[j] += Temp_min_SR;
+                        maxSpatialResolution[j] += Temp_max_SR;
+                    }
                     /* 220407 
                      * 보행자 방향 따라 CCTV 회전 제어
                      * 각 보행자가 탐지/미탐지 여부를 넘어서
@@ -1267,6 +1299,16 @@ namespace surveillance_system
                 }
                 double totalSimCount = Sim_Time / aUnitTime * N_Ped;
 
+                double[] Avg_minSpatialResolution = new double[N_Ped];
+                double[] Avg_maxSpatialResolution = new double[N_Ped];
+
+                for (int i = 0; i < N_Ped; i++)
+                {
+                    Avg_minSpatialResolution[i] = minSpatialResolution[i] / R_Surv_Time[i];
+                    Avg_maxSpatialResolution[i] = maxSpatialResolution[i] / R_Surv_Time[i];
+                    
+                }
+
                 // 결과(탐지율)
                 Console.WriteLine("====== Surveillance Time Result I ======");
                 Console.WriteLine("N_CCTV: {0}, N_Ped: {1}", N_CCTV, N_Ped);
@@ -1283,7 +1325,10 @@ namespace surveillance_system
                 Console.WriteLine(" [Avg] Out of Range (sec): {0:F2}", outOfRange.Average() * aUnitTime);
                 Console.WriteLine(" [Avg] Direction Error (sec): {0:F2}", directionError.Average() * aUnitTime);
                 Console.WriteLine(" [Avg] Success Time (sec): {0:F2}", R_Surv_Time.Average() * aUnitTime);
-
+                Console.WriteLine(" [Avg] Spatial Resolution (min): {0:F2}", minSpatialResolution.Average()/ Sim_Time);
+                Console.WriteLine(" [Avg] Spatial Resolution (max): {0:F2}", maxSpatialResolution.Average()/ Sim_Time);
+                Console.WriteLine(" [Avg] Spatial Resolution (min): {0:F2}", Avg_minSpatialResolution.Average());
+                Console.WriteLine(" [Avg] Spatial Resolution (max): {0:F2}", Avg_maxSpatialResolution.Average());
 
                 string subFolderPath = "Sim_Results";
                 string subFolderPathWithFile = Path.Combine(Directory.GetCurrentDirectory(), subFolderPath);
@@ -1361,12 +1406,16 @@ namespace surveillance_system
                 worksheet.Cells["B1"].Value = "Out of range (sec)";
                 worksheet.Cells["C1"].Value = "Direction error (sec)";
                 worksheet.Cells["D1"].Value = "Success (sec)";
+                worksheet.Cells["E1"].Value = "minSpatialResolution";
+                worksheet.Cells["F1"].Value = "maxSpatialResolution";
 
                 int TargetCellCol = idx_sim + 2;
                 worksheet.Cells["A" + TargetCellCol as string].Value = randSeedList[idx_sim]; 
                 worksheet.Cells["B" + TargetCellCol as string].Value = outOfRange.Average() * aUnitTime; 
                 worksheet.Cells["C" + TargetCellCol as string].Value = directionError.Average() * aUnitTime;
                 worksheet.Cells["D" + TargetCellCol as string].Value = R_Surv_Time.Average() * aUnitTime;
+                worksheet.Cells["E" + TargetCellCol as string].Value = minSpatialResolution.Average() / Sim_Time;
+                worksheet.Cells["F" + TargetCellCol as string].Value = maxSpatialResolution.Average() / Sim_Time;
 
                 if (idx_sim == numSim - 1)
                 {
@@ -1374,6 +1423,8 @@ namespace surveillance_system
                     worksheet.Cells["B" + TargetCellCol as string].Formula = "AVERAGE(B2:B" + (TargetCellCol - 1) as string + ")";
                     worksheet.Cells["C" + TargetCellCol as string].Formula = "AVERAGE(C2:C" + (TargetCellCol - 1) as string + ")";
                     worksheet.Cells["D" + TargetCellCol as string].Formula = "AVERAGE(D2:D" + (TargetCellCol - 1) as string + ")";
+                    worksheet.Cells["E" + TargetCellCol as string].Formula = "AVERAGE(E2:E" + (TargetCellCol - 1) as string + ")";
+                    worksheet.Cells["F" + TargetCellCol as string].Formula = "AVERAGE(F2:F" + (TargetCellCol - 1) as string + ")";
                 }    
                     //var file = new System.IO.FileInfo("Sim_Results.xlsx");
                 excelPackage.Save();
