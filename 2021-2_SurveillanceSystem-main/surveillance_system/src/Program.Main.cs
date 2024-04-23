@@ -20,11 +20,11 @@ namespace surveillance_system
         //static int randSeed = 1734;
         //public static Random rand = new Random(randSeed); // modified by 0boo 23-01-27
         static string Sim_ID = "230713_TEST";
-        static int numSim = 5;
+        static int numSim = 1;
         static int initRandSeed = 1731;
         static int[] randSeedList = new int [numSim];
 
-        const int param_N_CCTV = 10;
+        const int param_N_CCTV = 15;
         const int param_N_PED = 10;
 
         public static Random rand; // modified by 0boo 23-01-27
@@ -36,8 +36,8 @@ namespace surveillance_system
         const double aUnitTime = 100 * 0.001; // (sec) default value: 100 ms
         public static Road road = new Road();
 
-        const bool On_Visualization = false;
-        const bool Opt_Observation = false;
+        const bool On_Visualization = true;
+        const bool Opt_Observation = true;
         const bool Opt_Demo = false;
         const bool Opt_Log = false; // to get log of events
 
